@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Serverless Task Manager</title>
+    <style>
+        body { font-family: Arial; margin: 30px; }
+        input { padding: 5px; }
+        button { padding: 5px 10px; margin-left: 5px; }
+        li { margin: 5px 0; }
+    </style>
+</head>
+<body>
+
+<h2>Serverless Task Manager</h2>
+
+<input id="taskInput" placeholder="Enter task">
+<button onclick="createTask()">Add Task</button>
+
+<h3>Tasks:</h3>
+<ul id="taskList"></ul>
+
+<script>
+
+const api = "https://y68ah74nik.execute-api.us-east-1.amazonaws.com/prod/tasks";
+
+// CREATE TASK
+async function createTask() {
+    let title = document.getElementById("taskInput").value;
+
+    if (!title) {
+        alert("Enter a task");
+        return;
+    }
+
+    try {
+        let res = await fetch(api, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ title: title })
+        });
+
+        let data = await res.json();
+        console.log("Task created:", data);
+
+        document.getElementById("taskInput").value = "";
+        loadTasks();
+
+    } catch (err) {
+        console.error("Error:", err);
+    }
+}
+
+// LOAD TASKS
+async function loadTasks() {
+    try {
+        let res = await fetch(api);
+        let tasks = await res.json();
+
+        let list = document.getElementById("taskList");
+        list.innerHTML = "";
+
+        tasks.forEach(task => {
+            let li = document.createElement("li");
+
+            li.innerHTML = `
+                ${task.title} (${task.status})
+                <button onclick="deleteTask('${task.taskId}')">Delete</button>
+            `;
+
+            list.appendChild(li);
+        });
+
+    } catch (err) {
+        console.error("Error loading tasks:", err);
+    }
+}
+
+// DELETE TASK
+async function deleteTask(id) {
+    try {
+        let res = await fetch(`${api}?taskId=${id}`, {
+            method: "DELETE"
+        });
+
+        let data = await res.json();
+        console.log("Deleted:", data);
+
+        loadTasks();
+
+    } catch (err) {
+        console.error("Delete error:", err);
+    }
+}
+
+// AUTO LOAD
+loadTasks();
+
+</script>
+
+</body>
+</html>
